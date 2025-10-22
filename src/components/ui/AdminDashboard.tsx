@@ -3,47 +3,52 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Trash2, Eye, FileText, PenSquare, Inbox } from "lucide-react";
-import { getAllBlogPosts, deleteBlogPost, type BlogPost } from "@/lib/blogStorage";
+import { Edit, Trash2, Eye, FileText, PenSquare, Inbox, Sparkles } from "lucide-react";
+import { type BlogPost } from "@/lib/blogApi"; // ✅ Changed import
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
-// ✅ THIS INTERFACE IS CRITICAL
 interface AdminDashboardProps {
   editorContent: React.ReactNode;
   previewContent: React.ReactNode;
+  posts: BlogPost[]; // ✅ Receive posts from parent
   onEditPost?: (post: BlogPost) => void;
-  key?: number;
+  onDeletePost?: (id: string) => Promise<void>; // ✅ Async delete handler
 }
 
-// ✅ COMPONENT MUST ACCEPT PROPS
 export const AdminDashboard = ({ 
   editorContent, 
   previewContent, 
+  posts, // ✅ Use posts from props
   onEditPost,
-  key,
+  onDeletePost,
 }: AdminDashboardProps) => {
-  const [allPosts, setAllPosts] = useState<BlogPost[]>([]);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [deletingId, setDeletingId] = useState<string | null>(null); // ✅ Track deleting state
 
-  useEffect(() => {
-    loadPosts();
-  }, [key]);
+  const handleDelete = async (id: string, title: string) => {
+    if (!window.confirm(`Delete "${title}"?`)) {
+      return;
+    }
 
-  const loadPosts = () => {
-    const posts = getAllBlogPosts();
-    setAllPosts(posts);
-  };
-
-  const handleDelete = (id: string, title: string) => {
-    if (window.confirm(`Delete "${title}"?`)) {
-      deleteBlogPost(id);
-      loadPosts();
-      toast({
-        title: "Deleted",
-        description: "Blog post has been deleted",
-      });
+    if (onDeletePost) {
+      setDeletingId(id);
+      try {
+        await onDeletePost(id);
+        toast({
+          title: "Deleted",
+          description: "Blog post has been deleted",
+        });
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to delete post",
+          variant: "destructive",
+        });
+      } finally {
+        setDeletingId(null);
+      }
     }
   };
 
@@ -53,57 +58,85 @@ export const AdminDashboard = ({
     }
   };
 
-  const publishedPosts = allPosts.filter(p => p.published);
-  const draftPosts = allPosts.filter(p => !p.published);
+  // ✅ Filter posts from props
+  const publishedPosts = posts.filter(p => p.published);
+  const draftPosts = posts.filter(p => !p.published);
 
-  const PostCard = ({ post }: { post: BlogPost }) => (
-    <Card className="bg-card/50 backdrop-blur-sm hover:border-primary/50 transition-all">
-      <CardHeader>
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <CardTitle className="text-lg line-clamp-1">{post.title}</CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">{post.date}</p>
+  const PostCard = ({ post }: { post: BlogPost }) => {
+    const isDeleting = deletingId === post.id;
+
+    return (
+      <Card className="bg-card/50 backdrop-blur-sm hover:border-primary/50 transition-all">
+        <CardHeader>
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <CardTitle className="text-lg line-clamp-1">{post.title}</CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                {new Date(post.date).toLocaleDateString('en-US', { 
+                  month: 'short', 
+                  day: 'numeric', 
+                  year: 'numeric' 
+                })}
+              </p>
+              {/* Show category and tags */}
+              <div className="flex flex-wrap gap-1 mt-2">
+                <Badge variant="outline" className="text-xs">
+                  {post.category}
+                </Badge>
+                {post.tags && post.tags.slice(0, 2).map((tag, idx) => (
+                  <Badge key={idx} variant="secondary" className="text-xs">
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+            <Badge variant={post.published ? "default" : "secondary"}>
+              {post.published ? "Published" : "Draft"}
+            </Badge>
           </div>
-          <Badge variant={post.published ? "default" : "secondary"}>
-            {post.published ? "Published" : "Draft"}
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
-          {post.excerpt}
-        </p>
-        <div className="flex items-center gap-2">
-          {post.published && (  // ✅ Only show View button if published
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
+            {post.excerpt}
+          </p>
+          <div className="flex items-center gap-2">
+            {post.published && (
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={() => navigate(`/blog/${post.id}`)}
+              >
+                <Eye className="h-4 w-4 mr-1" />
+                View
+              </Button>
+            )}
             <Button 
               size="sm" 
               variant="outline" 
-              onClick={() => navigate(`/blog/${post.id}`)}
+              onClick={() => handleEdit(post)}
+              disabled={isDeleting}
             >
-              <Eye className="h-4 w-4 mr-1" />
-              View
+              <Edit className="h-4 w-4 mr-1" />
+              Edit
             </Button>
-          )}
-          <Button 
-            size="sm" 
-            variant="outline" 
-            onClick={() => handleEdit(post)}
-          >
-            <Edit className="h-4 w-4 mr-1" />
-            Edit
-          </Button>
-          <Button 
-            size="sm" 
-            variant="destructive" 
-            onClick={() => handleDelete(post.id, post.title)}
-          >
-            <Trash2 className="h-4 w-4 mr-1" />
-            Delete
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  );
+            <Button 
+              size="sm" 
+              variant="destructive" 
+              onClick={() => handleDelete(post.id, post.title)}
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <Sparkles className="h-4 w-4 mr-1 animate-spin" />
+              ) : (
+                <Trash2 className="h-4 w-4 mr-1" />
+              )}
+              {isDeleting ? "Deleting..." : "Delete"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
     <Tabs defaultValue="edit" className="w-full space-y-6">
@@ -118,7 +151,7 @@ export const AdminDashboard = ({
         </TabsTrigger>
         <TabsTrigger value="manage">
           <FileText className="h-4 w-4 mr-2" />
-          Manage ({publishedPosts.length}) 
+          Published ({publishedPosts.length})
         </TabsTrigger>
         <TabsTrigger value="drafts">
           <Inbox className="h-4 w-4 mr-2" />
@@ -135,27 +168,30 @@ export const AdminDashboard = ({
       </TabsContent>
 
       <TabsContent value="manage">
-  <div className="space-y-4">
-    <div className="flex items-center justify-between">
-      <h2 className="text-2xl font-bold">Published Posts</h2>
-      <p className="text-muted-foreground">{publishedPosts.length} published</p>
-    </div>
-    {publishedPosts.length === 0 ? ( // ✅ CORRECT - only published
-      <Card className="bg-card/50 backdrop-blur-sm">
-        <CardContent className="py-12 text-center">
-          <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-          <p className="text-muted-foreground">No published posts yet!</p>
-        </CardContent>
-      </Card>
-    ) : (
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {publishedPosts.map(post => ( // ✅ CORRECT - only show published
-          <PostCard key={post.id} post={post} />
-        ))}
-      </div>
-    )}
-  </div>
-</TabsContent>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold">Published Posts</h2>
+            <p className="text-muted-foreground">{publishedPosts.length} published</p>
+          </div>
+          {publishedPosts.length === 0 ? (
+            <Card className="bg-card/50 backdrop-blur-sm">
+              <CardContent className="py-12 text-center">
+                <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+                <p className="text-muted-foreground mb-2">No published posts yet!</p>
+                <p className="text-sm text-muted-foreground">
+                  Create your first post and click "Publish" to see it here.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {publishedPosts.map(post => (
+                <PostCard key={post.id} post={post} />
+              ))}
+            </div>
+          )}
+        </div>
+      </TabsContent>
 
       <TabsContent value="drafts">
         <div className="space-y-4">
@@ -166,8 +202,11 @@ export const AdminDashboard = ({
           {draftPosts.length === 0 ? (
             <Card className="bg-card/50 backdrop-blur-sm">
               <CardContent className="py-12 text-center">
-                <Inbox className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <p className="text-muted-foreground">No drafts. All posts are published!</p>
+                <Inbox className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+                <p className="text-muted-foreground mb-2">No drafts saved</p>
+                <p className="text-sm text-muted-foreground">
+                  Click "Save Draft" to save your work in progress.
+                </p>
               </CardContent>
             </Card>
           ) : (

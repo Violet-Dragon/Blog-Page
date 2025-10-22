@@ -4,135 +4,45 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { getPublishedBlogPosts, type BlogPost as StoredBlogPost } from "@/lib/blogStorage";
+import { getPublishedBlogPosts, type BlogPost } from '@/lib/blogApi';
 import { useNavigate } from "react-router-dom";
 import heroNebula from "@/assets/hero-nebula.jpg";
-import galaxy1 from "@/assets/galaxy-1.jpg";
-import blackHole from "@/assets/black-hole.jpg";
-import solarFlare from "@/assets/solar-flare.jpg";
-import nebula1 from "@/assets/nebula-1.jpg";
-import telescope from "@/assets/telescope.jpg";
-import magnetosphere from "@/assets/magnetosphere.jpg";
-import starCluster from "@/assets/star-cluster.jpg";
-import darkMatter from "@/assets/dark-matter.jpg";
 
 type Category = "all" | "astronomy" | "astrophysics" | "heliophysics";
-
-interface BlogPost {
-  id: number | string;
-  title: string;
-  excerpt: string;
-  category: Exclude<Category, "all">;
-  image: string;
-  date: string;
-  readTime: string;
-}
-
-const blogPosts: BlogPost[] = [
-  {
-    id: 1,
-    title: "The Magnificent Spiral Arms of Distant Galaxies",
-    excerpt: "Exploring the breathtaking structures of spiral galaxies and what their formations tell us about cosmic evolution and dark matter distribution.",
-    category: "astronomy",
-    image: galaxy1,
-    date: "Oct 8, 2025",
-    readTime: "8 min"
-  },
-  {
-    id: 2,
-    title: "Black Holes: Where Physics Breaks Down",
-    excerpt: "Journey into the heart of the universe's most extreme objects, where gravity becomes so intense that even light cannot escape.",
-    category: "astrophysics",
-    image: blackHole,
-    date: "Oct 5, 2025",
-    readTime: "12 min"
-  },
-  {
-    id: 3,
-    title: "Solar Flares and Space Weather Prediction",
-    excerpt: "Understanding how massive eruptions on the Sun's surface can impact Earth's technology and what we're doing to predict them.",
-    category: "heliophysics",
-    image: solarFlare,
-    date: "Oct 3, 2025",
-    readTime: "6 min"
-  },
-  {
-    id: 4,
-    title: "Nebulae: The Stellar Nurseries of Our Galaxy",
-    excerpt: "Discover the cosmic clouds where new stars are born, featuring stunning imagery from the latest telescope observations.",
-    category: "astronomy",
-    image: nebula1,
-    date: "Sep 29, 2025",
-    readTime: "9 min"
-  },
-  {
-    id: 5,
-    title: "Radio Astronomy: Listening to the Universe",
-    excerpt: "How massive radio telescope arrays are revolutionizing our understanding of distant galaxies, pulsars, and cosmic phenomena.",
-    category: "astronomy",
-    image: telescope,
-    date: "Sep 25, 2025",
-    readTime: "10 min"
-  },
-  {
-    id: 6,
-    title: "Earth's Magnetosphere: Our Cosmic Shield",
-    excerpt: "Examining how Earth's magnetic field protects us from the solar wind and creates the beautiful aurora displays we see at the poles.",
-    category: "heliophysics",
-    image: magnetosphere,
-    date: "Sep 20, 2025",
-    readTime: "7 min"
-  },
-  {
-    id: 7,
-    title: "Stellar Evolution: The Life Cycle of Stars",
-    excerpt: "From birth in molecular clouds to death as white dwarfs or spectacular supernovae, explore the amazing journey of stellar objects.",
-    category: "astrophysics",
-    image: starCluster,
-    date: "Sep 15, 2025",
-    readTime: "11 min"
-  },
-  {
-    id: 8,
-    title: "Dark Matter: The Universe's Hidden Framework",
-    excerpt: "Investigating the invisible scaffolding that holds galaxies together and makes up 85% of all matter in the cosmos.",
-    category: "astrophysics",
-    image: darkMatter,
-    date: "Sep 10, 2025",
-    readTime: "13 min"
-  },
-  {
-    id: 9,
-    title: "Solar Wind Dynamics and Interplanetary Space",
-    excerpt: "Understanding the continuous stream of charged particles flowing from the Sun and how it shapes our solar system.",
-    category: "heliophysics",
-    image: solarFlare,
-    date: "Sep 5, 2025",
-    readTime: "8 min"
-  }
-];
 
 const Index = () => {
   const [selectedCategory, setSelectedCategory] = useState<Category>("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [filteredPosts, setFilteredPosts] = useState<BlogPost[]>(blogPosts);
+  const [filteredPosts, setFilteredPosts] = useState<BlogPost[]>([]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
-  const [allPosts, setAllPosts] = useState<BlogPost[]>(blogPosts);
+  const [allPosts, setAllPosts] = useState<BlogPost[]>([]); // ✅ Start with empty array
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Load posts from localStorage on mount
+  // Fetch posts from API on mount
   useEffect(() => {
-    const storedPosts = getPublishedBlogPosts();
-    if (storedPosts.length > 0) {
-      setAllPosts(storedPosts);
-    }
+    const fetchPosts = async () => {
+      setLoading(true);
+      try {
+        const fetchedPosts = await getPublishedBlogPosts();
+        setAllPosts(fetchedPosts || []); // Use API posts or empty
+      } catch (error) {
+        console.error('Error fetching posts:', error);
+        setAllPosts([]); // Empty on error
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPosts();
   }, []);
 
   useEffect(() => {
     setIsVisible(true);
   }, []);
 
+  // Filter posts
   useEffect(() => {
     let filtered = allPosts;
 
@@ -148,7 +58,7 @@ const Index = () => {
     }
 
     setFilteredPosts(filtered);
-  }, [selectedCategory, searchQuery]);
+  }, [selectedCategory, searchQuery, allPosts]);
 
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
@@ -252,6 +162,15 @@ const Index = () => {
               >
                 Contact
               </button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate('/admin')}
+                className="w-full justify-start"
+              >
+                <Edit className="w-4 h-4 mr-2" />
+                Admin
+              </Button>
               <Button size="sm" className="bg-primary hover:bg-primary/90 w-full">
                 Subscribe
               </Button>
@@ -291,8 +210,9 @@ const Index = () => {
                   size="lg"
                   variant="outline"
                   className="border-primary/50 hover:bg-primary/10"
+                  onClick={() => navigate('/admin')}
                 >
-                  Latest Research
+                  Create First Post
                 </Button>
               </div>
             </div>
@@ -347,66 +267,100 @@ const Index = () => {
             </div>
           </div>
 
-          {/* Blog Grid */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredPosts.map((post, index) => (
-              <Card
-                key={post.id}
-                onClick={() => navigate(`/blog/${post.id}`)} 
-                className="group overflow-hidden bg-card/50 backdrop-blur-sm border-border/50 hover:border-primary/50 transition-all duration-500 hover:scale-105 hover:shadow-[0_0_40px_rgba(159,122,234,0.3)] animate-fade-in-up cursor-pointer"
-                style={{ animationDelay: `${index * 0.1}s` }}
-              >
-                <div className="relative h-48 overflow-hidden">
-                  <img
-                    src={post.image}
-                    alt={post.title}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent opacity-60" />
-                  <Badge className={`absolute top-4 right-4 ${
-                    post.category === "astronomy"
-                      ? "bg-primary/80 text-primary-foreground"
-                      : post.category === "astrophysics"
-                      ? "bg-secondary/80 text-secondary-foreground"
-                      : "bg-accent/80 text-accent-foreground"
-                  }`}>
-                    {post.category}
-                  </Badge>
-                </div>
-
-                <div className="p-6 space-y-4">
-                  <h3 className="text-xl font-bold group-hover:text-primary transition-colors">
-                    {post.title}
-                  </h3>
-                  <p className="text-muted-foreground line-clamp-3">
-                    {post.excerpt}
-                  </p>
-
-                  <div className="flex items-center justify-between pt-4 border-t border-border/50">
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="w-4 h-4" />
-                        {post.date}
+          {/* Loading State */}
+          {loading ? (
+            <div className="text-center py-20 animate-fade-in-up">
+              <Sparkles className="w-16 h-16 mx-auto mb-4 text-primary animate-spin" />
+              <p className="text-xl text-muted-foreground">Loading articles...</p>
+            </div>
+          ) : (
+            <>
+              {/* Blog Grid or Empty State */}
+              {filteredPosts.length > 0 ? (
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  {filteredPosts.map((post, index) => (
+                    <Card
+                      key={post.id}
+                      onClick={() => navigate(`/blog/${post.id}`)} 
+                      className="group overflow-hidden bg-card/50 backdrop-blur-sm border-border/50 hover:border-primary/50 transition-all duration-500 hover:scale-105 hover:shadow-[0_0_40px_rgba(159,122,234,0.3)] animate-fade-in-up cursor-pointer"
+                      style={{ animationDelay: `${index * 0.1}s` }}
+                    >
+                      <div className="relative h-48 overflow-hidden">
+                        {post.image ? (
+                          <img
+                            src={post.image}
+                            alt={post.title}
+                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
+                            <Sparkles className="w-16 h-16 text-primary/50" />
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent opacity-60" />
+                        <Badge className={`absolute top-4 right-4 ${
+                          post.category === "astronomy"
+                            ? "bg-primary/80 text-primary-foreground"
+                            : post.category === "astrophysics"
+                            ? "bg-secondary/80 text-secondary-foreground"
+                            : "bg-accent/80 text-accent-foreground"
+                        }`}>
+                          {post.category}
+                        </Badge>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <Clock className="w-4 h-4" />
-                        {post.readTime}
+
+                      <div className="p-6 space-y-4">
+                        <h3 className="text-xl font-bold group-hover:text-primary transition-colors">
+                          {post.title}
+                        </h3>
+                        <p className="text-muted-foreground line-clamp-3">
+                          {post.excerpt}
+                        </p>
+
+                        <div className="flex items-center justify-between pt-4 border-t border-border/50">
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            <div className="flex items-center gap-1">
+                              <Calendar className="w-4 h-4" />
+                              {new Date(post.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Clock className="w-4 h-4" />
+                              {post.readTime}
+                            </div>
+                          </div>
+                          <ArrowRight className="w-5 h-5 text-primary opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:translate-x-1" />
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                // ✅ Empty State - No Posts Yet
+                <div className="text-center py-20 animate-fade-in-up">
+                  <div className="max-w-md mx-auto space-y-6">
+                    <div className="relative">
+                      <Sparkles className="w-20 h-20 mx-auto mb-4 text-primary/50 animate-pulse" />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-32 h-32 bg-primary/10 rounded-full blur-2xl" />
                       </div>
                     </div>
-                    <ArrowRight className="w-5 h-5 text-primary opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:translate-x-1" />
+                    <h3 className="text-2xl font-bold">No Articles Yet</h3>
+                    <p className="text-muted-foreground">
+                      The cosmos awaits your first exploration. Create your first blog post to begin sharing discoveries.
+                    </p>
+                    <Button
+                      size="lg"
+                      onClick={() => navigate('/admin')}
+                      className="bg-primary hover:bg-primary/90 shadow-[0_0_30px_rgba(159,122,234,0.4)] group"
+                    >
+                      <Edit className="w-4 h-4 mr-2" />
+                      Create First Post
+                      <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    </Button>
                   </div>
                 </div>
-              </Card>
-            ))}
-          </div>
-
-          {filteredPosts.length === 0 && (
-            <div className="text-center py-20 animate-fade-in-up">
-              <Sparkles className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-              <p className="text-xl text-muted-foreground">
-                No articles found. Try a different search or category.
-              </p>
-            </div>
+              )}
+            </>
           )}
         </div>
       </section>
@@ -443,13 +397,13 @@ const Index = () => {
             <div>
               <h4 className="font-semibold mb-4">Newsletter</h4>
               <p className="text-muted-foreground mb-4">
-                Stay tuned! Get the latest cosmic discoveries delivered to your inbox.
+                Stay updated with the latest cosmic discoveries.
               </p>
               <div className="flex gap-2">
-                <Input placeholder="Your email" className="bg-background/50" /> 
+                <Input placeholder="Your email" className="bg-background/50" />
                 <Button className="bg-primary hover:bg-primary/90">
                   Subscribe
-                 </Button>
+                </Button>
               </div>
             </div>
           </div>
@@ -462,5 +416,4 @@ const Index = () => {
     </div>
   );
 };
-
 export default Index;

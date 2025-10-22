@@ -7,7 +7,7 @@ import Index from "./pages/Index";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import BlogPost from "@/pages/BlogPost";
-
+import AdminLogin from "./pages/AdminLogin";
 
 const queryClient = new QueryClient();
 
@@ -20,9 +20,15 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/admin" element={<Admin />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/blog/:id" element={<BlogPost />} /> {/* ✅ MOVED BEFORE * */}
+
+
+
+
+
+          {/* ⚠️ Catch-all route MUST be LAST */}
           <Route path="*" element={<NotFound />} />
-          <Route path="/blog/:id" element={<BlogPost />} />
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
