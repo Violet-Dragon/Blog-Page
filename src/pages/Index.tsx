@@ -197,7 +197,7 @@ const Index = () => {
                 Discover the latest insights in astronomy, astrophysics, and heliophysics. 
                 From distant galaxies to our own Sun, explore the wonders of the universe.
               </p>
-              <div className="flex gap-4">
+              <div className="flex flex-col sm:flex-row gap-4">
                 <Button
                   size="lg"
                   onClick={() => scrollToSection("blog")}
@@ -214,6 +214,7 @@ const Index = () => {
                 >
                   Create First Post
                 </Button>
+                
               </div>
             </div>
 
@@ -226,15 +227,31 @@ const Index = () => {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
               </div>
-              <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-primary/20 rounded-full blur-3xl animate-glow-pulse" />
-              <div className="absolute -top-6 -left-6 w-40 h-40 bg-secondary/20 rounded-full blur-3xl animate-glow-pulse" style={{ animationDelay: '1s' }} />
+              {/* 👇 NEW RESPONSIVE GLOW DIV #1 👇 */}
+              <div className="
+                absolute 
+                w-20 h-20 bottom-0 right-0           /* Mobile: Smaller and inside the bottom-right corner */
+                md:w-32 md:h-32 md:-bottom-6 md:-right-6 /* Desktop: Your original larger, overflowing style */
+                bg-primary/20 rounded-full blur-3xl animate-glow-pulse" 
+              />
+
+              {/* 👇 NEW RESPONSIVE GLOW DIV #2 👇 */}
+              <div 
+                className="
+                  absolute
+                  w-24 h-24 top-0 left-0              /* Mobile: Smaller and inside the top-left corner */
+                  md:w-40 md:h-40 md:-top-6 md:-left-6 /* Desktop: Your original larger, overflowing style */
+                  bg-secondary/20 rounded-full blur-3xl animate-glow-pulse" 
+                style={{ animationDelay: '1s' }} 
+              />
+            
             </div>
           </div>
         </div>
       </section>
 
       {/* Blog Section */}
-      <section id="blog" className="relative z-10 py-20 px-6">
+      <section id="blog" className="relative z-10 py-0 px-6">
         <div className="container mx-auto">
           {/* Search and Filters */}
           <div className="mb-12 space-y-6">
@@ -285,7 +302,7 @@ const Index = () => {
                       className="group overflow-hidden bg-card/50 backdrop-blur-sm border-border/50 hover:border-primary/50 transition-all duration-500 hover:scale-105 hover:shadow-[0_0_40px_rgba(159,122,234,0.3)] animate-fade-in-up cursor-pointer"
                       style={{ animationDelay: `${index * 0.1}s` }}
                     >
-                      <div className="relative h-48 overflow-hidden">
+                      <div className="relative h-40 sm:h-48 overflow-hidden">
                         {post.image ? (
                           <img
                             src={post.image}
@@ -309,8 +326,8 @@ const Index = () => {
                         </Badge>
                       </div>
 
-                      <div className="p-6 space-y-4">
-                        <h3 className="text-xl font-bold group-hover:text-primary transition-colors">
+                      <div className="p-4 sm:p-6 space y-3 sm:space-y-4">
+                        <h3 className="text-lg sm:text-xl font-bold group-hover:text-primary transition-colors">
                           {post.title}
                         </h3>
                         <p className="text-muted-foreground line-clamp-3">

@@ -4,28 +4,28 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Edit, Trash2, Eye, FileText, PenSquare, Inbox, Sparkles } from "lucide-react";
-import { type BlogPost } from "@/lib/blogApi"; // ✅ Changed import
+import { type BlogPost } from "@/lib/blogApi";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
 interface AdminDashboardProps {
   editorContent: React.ReactNode;
   previewContent: React.ReactNode;
-  posts: BlogPost[]; // ✅ Receive posts from parent
+  posts: BlogPost[];
   onEditPost?: (post: BlogPost) => void;
-  onDeletePost?: (id: string) => Promise<void>; // ✅ Async delete handler
+  onDeletePost?: (id: string) => Promise<void>;
 }
 
 export const AdminDashboard = ({ 
   editorContent, 
   previewContent, 
-  posts, // ✅ Use posts from props
+  posts,
   onEditPost,
   onDeletePost,
 }: AdminDashboardProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [deletingId, setDeletingId] = useState<string | null>(null); // ✅ Track deleting state
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const handleDelete = async (id: string, title: string) => {
     if (!window.confirm(`Delete "${title}"?`)) {
@@ -58,7 +58,6 @@ export const AdminDashboard = ({
     }
   };
 
-  // ✅ Filter posts from props
   const publishedPosts = posts.filter(p => p.published);
   const draftPosts = posts.filter(p => !p.published);
 
@@ -78,7 +77,6 @@ export const AdminDashboard = ({
                   year: 'numeric' 
                 })}
               </p>
-              {/* Show category and tags */}
               <div className="flex flex-wrap gap-1 mt-2">
                 <Badge variant="outline" className="text-xs">
                   {post.category}
@@ -99,7 +97,8 @@ export const AdminDashboard = ({
           <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
             {post.excerpt}
           </p>
-          <div className="flex items-center gap-2">
+          {/* 👇 FIX #2: Added flex-wrap to allow buttons to wrap on small screens 👇 */}
+          <div className="flex items-center flex-wrap gap-2">
             {post.published && (
               <Button 
                 size="sm" 
@@ -140,7 +139,8 @@ export const AdminDashboard = ({
 
   return (
     <Tabs defaultValue="edit" className="w-full space-y-6">
-      <TabsList className="grid w-full grid-cols-4 bg-card">
+      {/* 👇 FIX #1: Changed grid-cols-4 to be responsive 👇 */}
+      <TabsList className="grid w-full grid-cols-1 sm:grid-cols-4 bg-card h-auto sm:h-10">
         <TabsTrigger value="edit">
           <PenSquare className="h-4 w-4 mr-2" />
           Create Post
@@ -184,7 +184,7 @@ export const AdminDashboard = ({
               </CardContent>
             </Card>
           ) : (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {publishedPosts.map(post => (
                 <PostCard key={post.id} post={post} />
               ))}
@@ -210,7 +210,7 @@ export const AdminDashboard = ({
               </CardContent>
             </Card>
           ) : (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {draftPosts.map(post => (
                 <PostCard key={post.id} post={post} />
               ))}

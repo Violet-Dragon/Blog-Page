@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import mammoth from "mammoth";
 import { useToast } from "@/hooks/use-toast";
 import { 
   saveBlogPost, 
@@ -14,19 +15,19 @@ import {
   type BlogPost,
   checkAuth,
   logout
-} from "@/lib/blogApi"; // ✅ Changed import
+} from "@/lib/blogApi";
 import { useNavigate } from "react-router-dom";
 import { 
   Eye, Save, Send, Sparkles, ArrowLeft, Bold, Italic, List, 
   Link2, Image as ImageIcon, Heading1, Heading2,
   AlignLeft, AlignCenter, AlignRight, AlignJustify,
-  Underline, Type, Palette, Globe, LogOut
+  Underline, Type, Palette, Globe, LogOut, FileText
 } from "lucide-react";
 import { markdownToHtml, supportedLanguages } from "@/lib/markdown";
 
 const Admin = () => {
   const [allPosts, setAllPosts] = useState<BlogPost[]>([]);
-  const [loading, setLoading] = useState(true); // ✅ Add loading
+  const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [excerpt, setExcerpt] = useState("");
@@ -36,12 +37,12 @@ const Admin = () => {
   const [author, setAuthor] = useState("Admin");
   const [readTime, setReadTime] = useState("5 min read");
   const [language, setLanguage] = useState("en");
-  const [editingPostId, setEditingPostId] = useState<string | null>(null); // ✅ Track editing
+  const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const contentRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // ✅ Check authentication on mount
   useEffect(() => {
     const checkAuthentication = async () => {
       const isAuth = await checkAuth();
@@ -51,13 +52,12 @@ const Admin = () => {
           description: "Please login to access admin panel",
           variant: "destructive",
         });
-        navigate('/admin/login'); // You'll need to create this page
+        navigate('/admin/login');
       }
     };
     checkAuthentication();
   }, [navigate, toast]);
 
-  // ✅ Fetch posts from API
   useEffect(() => {
     const fetchPosts = async () => {
       setLoading(true);
@@ -78,14 +78,12 @@ const Admin = () => {
     fetchPosts();
   }, [toast]);
 
-  // Calculate read time based on word count
   useEffect(() => {
     const wordCount = content.trim().split(/\s+/).length;
     const minutes = Math.ceil(wordCount / 200);
     setReadTime(`${minutes} min read`);
   }, [content]);
 
-  // Auto-generate excerpt from content
   useEffect(() => {
     if (content && !excerpt) {
       const firstParagraph = content.split('\n\n')[0];
@@ -93,7 +91,6 @@ const Admin = () => {
     }
   }, [content, excerpt]);
 
-  // ✅ Refresh posts after save/delete
   const refreshPosts = async () => {
     try {
       const posts = await getAllBlogPosts();
@@ -170,17 +167,11 @@ const Admin = () => {
     }
   };
 
-  // ✅ Update save draft to use API
   const handleSaveDraft = async () => {
     if (!title || !content) {
-      toast({
-        title: "Missing Fields",
-        description: "Please fill in title and content",
-        variant: "destructive",
-      });
+      toast({ title: "Missing Fields", description: "Please fill in title and content", variant: "destructive" });
       return;
     }
-
     const post: BlogPost = {
       id: editingPostId || `post-${Date.now()}`,
       title,
@@ -194,38 +185,21 @@ const Admin = () => {
       readTime,
       published: false,
     };
-
     try {
       await saveBlogPost(post);
       await refreshPosts();
-      
-      toast({
-        title: "Draft Saved",
-        description: "Your blog post has been saved as a draft",
-      });
-      
-      // Clear form after save
+      toast({ title: "Draft Saved", description: "Your blog post has been saved as a draft" });
       clearForm();
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to save draft",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Failed to save draft", variant: "destructive" });
     }
   };
 
-  // ✅ Update publish to use API
   const handlePublish = async () => {
     if (!title || !content) {
-      toast({
-        title: "Missing Fields",
-        description: "Please fill in title and content",
-        variant: "destructive",
-      });
+      toast({ title: "Missing Fields", description: "Please fill in title and content", variant: "destructive" });
       return;
     }
-
     const post: BlogPost = {
       id: editingPostId || `post-${Date.now()}`,
       title,
@@ -239,28 +213,16 @@ const Admin = () => {
       readTime,
       published: true,
     };
-
     try {
       await saveBlogPost(post);
       await refreshPosts();
-      
-      toast({
-        title: "Published",
-        description: "Your blog post has been published successfully!",
-      });
-      
-      // Clear form after publish
+      toast({ title: "Published", description: "Your blog post has been published successfully!" });
       clearForm();
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to publish post",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Failed to publish post", variant: "destructive" });
     }
   };
 
-  // ✅ Clear form helper
   const clearForm = () => {
     setTitle("");
     setContent("");
@@ -270,7 +232,6 @@ const Admin = () => {
     setEditingPostId(null);
   };
 
-  // ✅ Handle edit post
   const handleEditPost = (post: BlogPost) => {
     setEditingPostId(post.id);
     setTitle(post.title);
@@ -280,21 +241,72 @@ const Admin = () => {
     setTags(post.tags.join(', '));
     setFeaturedImage(post.image);
     setAuthor(post.author);
-    
-    toast({
-      title: "Loaded",
-      description: `Editing: ${post.title}`,
-    });
+    toast({ title: "Loaded", description: `Editing: ${post.title}` });
   };
 
-  // ✅ Handle logout
   const handleLogout = async () => {
     await logout();
-    toast({
-      title: "Logged Out",
-      description: "You have been logged out successfully",
-    });
+    toast({ title: "Logged Out", description: "You have been logged out successfully" });
     navigate('/admin/login');
+  };
+
+  const handleDocxImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    clearForm(); 
+    toast({ title: "Importing...", description: "Reading your document." });
+
+    const reader = new FileReader();
+
+    reader.onload = async (loadEvent) => {
+      const arrayBuffer = loadEvent.target?.result as ArrayBuffer;
+      try {
+        const mammothOptions = {
+          convertImage: mammoth.images.imgElement((image) => 
+            image.read("base64").then((imageBuffer) => ({
+              src: `data:${image.contentType};base64,${imageBuffer}`
+            }))
+          ),
+          styleMap: [
+             "p[alignment='justify'] => p:fresh(style='text-align: justify;')"
+
+          ]
+        };
+        const result = await mammoth.convertToHtml({ arrayBuffer }, mammothOptions);
+        const html = result.value;
+
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = html;
+
+        const firstH1 = tempDiv.querySelector('h1');
+        let postTitle = file.name.replace('.docx', '');
+        if (firstH1) {
+          postTitle = firstH1.innerText;
+          firstH1.remove();
+        }
+        
+        const postContent = tempDiv.innerHTML;
+        console.log("---- RAW IMPORTED HTML ----\n", postContent); 
+        setTitle(postTitle);
+        setContent(postContent);
+
+        toast({
+          title: "Import Successful",
+          description: `"${postTitle}" loaded into the editor.`,
+        });
+        
+      } catch (error) {
+        console.error("DOCX parsing error:", error);
+        toast({
+          title: "Import Failed",
+          description: "Could not read the .docx file.",
+          variant: "destructive",
+        });
+      }
+    };
+    reader.readAsArrayBuffer(file);
+    event.target.value = '';
   };
 
   if (loading) {
@@ -310,7 +322,6 @@ const Admin = () => {
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* Animated background stars */}
       <div className="fixed inset-0 pointer-events-none">
         {[...Array(50)].map((_, i) => (
           <div
@@ -327,8 +338,7 @@ const Admin = () => {
       </div>
 
       <div className="relative z-10 container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-8">
           <div>
             <Button
               variant="ghost"
@@ -345,23 +355,34 @@ const Admin = () => {
               {editingPostId ? 'Editing post' : 'Create amazing space content'}
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {editingPostId && (
-              <Button variant="outline" onClick={clearForm}>
+              <Button variant="outline" onClick={clearForm} className="flex-grow sm:flex-grow-0">
                 New Post
               </Button>
             )}
-            <Button variant="outline" onClick={handleSaveDraft}>
+            <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="flex-grow sm:flex-grow-0">
+              <FileText className="mr-2 h-4 w-4" />
+              Import DOCX
+            </Button>
+            <input
+              type="file"
+              ref={fileInputRef}
+              className="hidden"
+              accept=".docx"
+              onChange={handleDocxImport}
+            />
+            <Button variant="outline" onClick={handleSaveDraft} className="flex-grow sm:flex-grow-0">
               <Save className="mr-2 h-4 w-4" />
               Save Draft
             </Button>
-            <Button onClick={handlePublish} className="bg-gradient-to-r from-primary to-secondary hover:opacity-90">
+            <Button onClick={handlePublish} className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 flex-grow sm:flex-grow-0">
               <Send className="mr-2 h-4 w-4" />
               {editingPostId ? 'Update' : 'Publish'}
             </Button>
             <Button variant="ghost" onClick={handleLogout}>
               <LogOut className="mr-2 h-4 w-4" />
-              Logout
+              <span className="hidden sm:inline ml-2">Logout</span>
             </Button>
           </div>
         </div>
@@ -387,7 +408,7 @@ const Admin = () => {
           }}
           editorContent={
             <div className="space-y-6">
-              <div className="grid md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Main Content Card */}
                 <Card className="md:col-span-2 bg-card/50 backdrop-blur-sm border-border">
                   <CardHeader>

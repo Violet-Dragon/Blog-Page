@@ -64,3 +64,29 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 }
+
+/* In src/index.css */
+
+/* ... your other styles ... */
+
+/* Custom classes for floated images in blog posts */
+.float-image-left {
+  float: left;
+  max-width: 50%; /* Prevents image from being too wide on mobile */
+  margin-right: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.float-image-right {
+  float: right;
+  max-width: 50%;
+  margin-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+/* Add a clearfix to the parent to contain the float */
+.prose .contains-float::after {
+  content: "";
+  display: table;
+  clear: both;
+}
